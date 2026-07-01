@@ -1,0 +1,17 @@
+[
+  { "arenaId": 90001, "name": "Lightning Strike", "manaValue": 2, "colors": ["R"], "rarity": "common", "types": ["Instant"], "oracleText": "Deals 3 damage to any target." },
+  { "arenaId": 90002, "name": "Serra Angel", "manaValue": 5, "colors": ["W"], "rarity": "uncommon", "types": ["Creature"], "oracleText": "Flying, vigilance" },
+  { "arenaId": 90003, "name": "Doom Blade", "manaValue": 2, "colors": ["B"], "rarity": "common", "types": ["Instant"], "oracleText": "Destroy target nonblack creature." },
+  { "arenaId": 90004, "name": "Divination", "manaValue": 3, "colors": ["U"], "rarity": "common", "types": ["Sorcery"], "oracleText": "Draw two cards." },
+  { "arenaId": 90005, "name": "Llanowar Elves", "manaValue": 1, "colors": ["G"], "rarity": "common", "types": ["Creature"], "oracleText": "Tap: Add G." },
+  { "arenaId": 90006, "name": "Shivan Dragon", "manaValue": 6, "colors": ["R"], "rarity": "rare", "types": ["Creature"], "oracleText": "Flying." },
+  { "arenaId": 90007, "name": "Pacifism", "manaValue": 2, "colors": ["W"], "rarity": "common", "types": ["Enchantment"], "oracleText": "Enchanted creature can't attack or block." },
+  { "arenaId": 90008, "name": "Cancel", "manaValue": 3, "colors": ["U"], "rarity": "common", "types": ["Instant"], "oracleText": "Counter target spell." },
+  { "arenaId": 90009, "name": "Grizzly Bears", "manaValue": 2, "colors": ["G"], "rarity": "common", "types": ["Creature"], "oracleText": "" },
+  { "arenaId": 90010, "name": "Sengir Vampire", "manaValue": 5, "colors": ["B"], "rarity": "rare", "types": ["Creature"], "oracleText": "Flying." },
+  { "arenaId": 90011, "name": "Giant Growth", "manaValue": 1, "colors": ["G"], "rarity": "common", "types": ["Instant"], "oracleText": "Target creature gets +3/+3 until end of turn." },
+  { "arenaId": 90012, "name": "Angelic Gift", "manaValue": 2, "colors": ["W"], "rarity": "common", "types": ["Enchantment"], "oracleText": "Draw a card. Enchanted creature has flying." },
+  { "arenaId": 90013, "name": "Goblin Chainwhirler", "manaValue": 3, "colors": ["R"], "rarity": "rare", "types": ["Creature"], "oracleText": "First strike. Deals 1 damage to each creature and player your opponents control." },
+  { "arenaId": 90014, "name": "Opt", "manaValue": 1, "colors": ["U"], "rarity": "common", "types": ["Instant"], "oracleText": "Scry 1. Draw a card." },
+  { "arenaId": 90015, "name": "Plains", "manaValue": 0, "colors": [], "rarity": "land", "types": ["Land"], "oracleText": "Tap: Add W." }
+]
