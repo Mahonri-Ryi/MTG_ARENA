@@ -1,4 +1,4 @@
-import type { Card, DraftPack, PickRecommendation, RankedCard } from "../types.js";
+import type { Card, DraftPack, PickRecommendation, RankedCard } from "../types";
 
 /** Card power ratings keyed by exact card name (0-100 scale, ~win-rate proxy). */
 export type RatingsMap = Record<string, number>;

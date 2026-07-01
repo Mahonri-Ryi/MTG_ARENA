@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseLogText, sampleLogText } from "../src/index.js";
+import { parseLogText, sampleLogText } from "../src/index";
 
 describe("parseLogText", () => {
   it("parses a premier draft pack (Draft.Notify, comma string)", () => {

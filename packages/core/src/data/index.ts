@@ -1,5 +1,5 @@
-import type { Card } from "../types.js";
-import type { RatingsMap } from "../draft/engine.js";
+import type { Card } from "../types";
+import type { RatingsMap } from "../draft/engine";
 import cardsJson from "./cards.sample.json";
 import ratingsJson from "./ratings.sample.json";
 

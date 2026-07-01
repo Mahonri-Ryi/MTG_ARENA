@@ -1,6 +1,6 @@
-import { DraftEngine, type DraftEngineOptions } from "./draft/engine.js";
-import { parseLogText } from "./log/parser.js";
-import type { CardSource, LogEvent, MatchState, PickRecommendation } from "./types.js";
+import { DraftEngine, type DraftEngineOptions } from "./draft/engine";
+import { parseLogText } from "./log/parser";
+import type { CardSource, LogEvent, MatchState, PickRecommendation } from "./types";
 
 /**
  * High-level orchestrator that turns a stream of parsed log events into the

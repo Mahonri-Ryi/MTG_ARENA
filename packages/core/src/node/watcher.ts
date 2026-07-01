@@ -1,8 +1,8 @@
 import { watch, type FSWatcher } from "node:fs";
 import { open, stat } from "node:fs/promises";
 
-import { parseLogText } from "../log/parser.js";
-import type { LogEvent } from "../types.js";
+import { parseLogText } from "../log/parser";
+import type { LogEvent } from "../types";
 
 export type LogEventHandler = (event: LogEvent) => void;
 

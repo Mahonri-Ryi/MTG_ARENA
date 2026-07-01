@@ -1,4 +1,4 @@
-import type { Card, CardRarity, CardSource } from "../types.js";
+import type { Card, CardRarity, CardSource } from "../types";
 
 const SCRYFALL_BASE = "https://api.scryfall.com";
 

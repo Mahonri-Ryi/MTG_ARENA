@@ -8,7 +8,7 @@ import {
   sampleLogText,
   sampleRatings,
   type Card
-} from "../src/index.js";
+} from "../src/index";
 
 const bear: Card = {
   arenaId: 1,

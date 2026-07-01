@@ -1,4 +1,4 @@
-import type { Card, CardSource } from "../types.js";
+import type { Card, CardSource } from "../types";
 
 /**
  * In-memory card source. Used for tests and for fully-offline demos, and as a

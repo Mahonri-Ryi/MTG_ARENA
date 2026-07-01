@@ -1,4 +1,4 @@
-import type { DraftPack, LogEvent } from "../types.js";
+import type { DraftPack, LogEvent } from "../types";
 
 /**
  * Parser for MTG Arena's Player.log ("Detailed Logs (Plugin Support)" enabled).

@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "MTG Arena Coach",
+    "slug": "mtg-arena-coach",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "platforms": ["ios", "android", "web"],
+    "backgroundColor": "#10121b",
+    "web": {
+      "bundler": "metro"
+    },
+    "android": {
+      "package": "gg.mtgcoach.companion"
+    }
+  }
+}

@@ -1,2 +1,2 @@
-export * from "./watcher.js";
-export * from "./logPath.js";
+export * from "./watcher";
+export * from "./logPath";
