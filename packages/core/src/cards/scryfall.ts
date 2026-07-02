@@ -64,10 +64,15 @@ function toCard(sc: ScryfallCard, arenaId?: number): Card {
  * gentle, so requests are made sequentially with a small delay.
  */
 export class ScryfallCardSource implements CardSource {
-  constructor(
-    private readonly fetchImpl: typeof fetch = fetch,
-    private readonly delayMs = 60
-  ) {}
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(fetchImpl?: typeof fetch, private readonly delayMs = 60) {
+    // Wrap the global fetch so it keeps its binding to the realm's global
+    // object. Storing/calling `this.fetchImpl(...)` with a bare `fetch`
+    // reference throws "Illegal invocation" in browsers (incl. React Native
+    // Web), which would otherwise silently return empty results.
+    this.fetchImpl = fetchImpl ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
+  }
 
   async getByArenaId(arenaId: number): Promise<Card | undefined> {
     try {

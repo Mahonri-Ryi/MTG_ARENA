@@ -62,10 +62,16 @@ export function CollectionScreen() {
   const [loadingCards, setLoadingCards] = useState(false);
 
   useEffect(() => {
+    console.log("[CollectionScreen] Fetching sets...");
     void getScryfall()
       .listSets()
       .then((s) => {
+        console.log("[CollectionScreen] Got sets:", s.length, s.slice(0, 3));
         setSets(s);
+        setLoadingSets(false);
+      })
+      .catch((err) => {
+        console.error("[CollectionScreen] Error fetching sets:", err);
         setLoadingSets(false);
       });
   }, []);
