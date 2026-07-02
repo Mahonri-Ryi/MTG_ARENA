@@ -17,7 +17,10 @@ export interface Card {
   types: string[];
   /** Free-form oracle text, used for lightweight heuristics. */
   oracleText?: string;
+  /** Full card image (Scryfall "normal"). */
   imageUrl?: string;
+  /** Cropped art only (Scryfall "art_crop"), used for banners/hero art. */
+  artCropUrl?: string;
 }
 
 export type CardRarity = "common" | "uncommon" | "rare" | "mythic" | "land" | "unknown";

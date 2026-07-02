@@ -10,7 +10,7 @@ interface ScryfallCard {
   rarity?: string;
   type_line?: string;
   oracle_text?: string;
-  image_uris?: { normal?: string; small?: string };
+  image_uris?: { normal?: string; small?: string; art_crop?: string };
   arena_id?: number;
 }
 
@@ -42,7 +42,8 @@ function toCard(sc: ScryfallCard, arenaId?: number): Card {
     rarity: mapRarity(sc.rarity, sc.type_line),
     types,
     oracleText: sc.oracle_text,
-    imageUrl: sc.image_uris?.normal ?? sc.image_uris?.small
+    imageUrl: sc.image_uris?.normal ?? sc.image_uris?.small,
+    artCropUrl: sc.image_uris?.art_crop
   };
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import {
   Coach,
   LocalCardSource,
@@ -31,25 +31,76 @@ function toLogText(input: string): string {
   return trimmed;
 }
 
-function CardRow({ ranked, best }: { ranked: RankedCard; best: boolean }) {
+function GradeBadge({ grade, size = 26 }: { grade: string; size?: number }) {
   return (
-    <View style={[styles.cardRow, best && styles.cardRowBest]}>
-      <View style={[styles.grade, { backgroundColor: GRADE_HEX[ranked.grade] ?? "#888" }]}>
-        <Text style={styles.gradeText}>{ranked.grade}</Text>
+    <View style={[styles.gradeBadge, { width: size, height: size, backgroundColor: GRADE_HEX[grade] ?? "#888" }]}>
+      <Text style={[styles.gradeText, { fontSize: size * 0.5 }]}>{grade}</Text>
+    </View>
+  );
+}
+
+/** The recommended pick, shown Untapped-style as a large hero card. */
+function HeroPick({ ranked }: { ranked: RankedCard }) {
+  const { card } = ranked;
+  return (
+    <View style={styles.hero}>
+      {card.artCropUrl && (
+        <Image source={{ uri: card.artCropUrl }} style={styles.heroArt} resizeMode="cover" blurRadius={1} />
+      )}
+      <View style={styles.heroOverlay} />
+      <View style={styles.heroRow}>
+        {card.imageUrl ? (
+          <Image source={{ uri: card.imageUrl }} style={styles.heroCard} resizeMode="contain" />
+        ) : (
+          <View style={[styles.heroCard, styles.cardPlaceholder]} />
+        )}
+        <View style={styles.heroInfo}>
+          <Text style={styles.heroTag}>TOP PICK</Text>
+          <Text style={styles.heroName} numberOfLines={2}>
+            {card.name}
+          </Text>
+          <View style={styles.heroScoreRow}>
+            <GradeBadge grade={ranked.grade} size={30} />
+            <Text style={styles.heroScore}>{ranked.score.toFixed(0)}</Text>
+            <Text style={styles.heroScoreLabel}>/100</Text>
+            <View style={styles.heroPips}>
+              {card.colors.length ? card.colors.map((c) => <Pip key={c} color={c} size={16} />) : <Pip color="C" size={16} />}
+            </View>
+          </View>
+          {ranked.reasons.slice(0, 3).map((r, i) => (
+            <Text key={i} style={styles.heroReason} numberOfLines={1}>
+              • {r}
+            </Text>
+          ))}
+        </View>
       </View>
-      <View style={styles.cardMain}>
-        <Text style={styles.cardName} numberOfLines={1}>
-          {best ? "★ " : ""}
-          {ranked.card.name}
-        </Text>
-        <Text style={styles.cardReasons} numberOfLines={1}>
-          {ranked.reasons.join(" · ")}
-        </Text>
+    </View>
+  );
+}
+
+/** A card in the pack grid: full art with grade + score overlays. */
+function CardTile({ ranked }: { ranked: RankedCard }) {
+  const { card } = ranked;
+  return (
+    <View style={styles.tile}>
+      <View style={styles.tileImageWrap}>
+        {card.imageUrl ? (
+          <Image source={{ uri: card.imageUrl }} style={styles.tileImage} resizeMode="cover" />
+        ) : (
+          <View style={[styles.tileImage, styles.cardPlaceholder]}>
+            <Text style={styles.muted}>{card.name}</Text>
+          </View>
+        )}
+        <View style={styles.tileGrade}>
+          <GradeBadge grade={ranked.grade} size={24} />
+        </View>
+        <View style={styles.tileScore}>
+          <Text style={styles.tileScoreText}>{ranked.score.toFixed(0)}</Text>
+        </View>
       </View>
-      <View style={styles.pips}>
-        {ranked.card.colors.length === 0 ? <Pip color="C" /> : ranked.card.colors.map((c) => <Pip key={c} color={c} />)}
-      </View>
-      <Text style={styles.score}>{ranked.score.toFixed(0)}</Text>
+      <Text style={styles.tileName} numberOfLines={1}>
+        {card.name}
+      </Text>
     </View>
   );
 }
@@ -73,69 +124,68 @@ export function DraftScreen() {
   }, [analyze]);
 
   const packLabel = useMemo(
-    () => (rec ? `P${rec.pack.packNumber} · P${rec.pack.pickNumber}` : ""),
+    () => (rec ? `Pack ${rec.pack.packNumber}, Pick ${rec.pack.pickNumber}` : ""),
     [rec]
   );
 
+  const rest = rec ? rec.ranked.slice(1) : [];
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.panel}>
-        <View style={styles.panelHead}>
-          <Text style={styles.panelTitle}>DRAFT ASSISTANT</Text>
-          {!!packLabel && <Text style={styles.packMeta}>{packLabel}</Text>}
+      <View style={styles.headRow}>
+        <Text style={styles.h1}>Draft Assistant</Text>
+        {!!packLabel && <Text style={styles.packMeta}>{packLabel}</Text>}
+      </View>
+
+      {colors.length > 0 && (
+        <View style={styles.commit}>
+          <Text style={styles.commitLabel}>Your colors</Text>
+          <View style={styles.pips}>
+            {colors.map((c) => (
+              <Pip key={c} color={c} size={20} />
+            ))}
+          </View>
         </View>
+      )}
 
-        {colors.length > 0 && (
-          <View style={styles.commit}>
-            <Text style={styles.commitLabel}>Committed colors: </Text>
-            <View style={styles.pips}>
-              {colors.map((c) => (
-                <Pip key={c} color={c} />
-              ))}
-            </View>
+      {rec?.bestPick ? <HeroPick ranked={rec.bestPick} /> : <Text style={styles.empty}>Waiting for a pack…</Text>}
+
+      {rest.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>REST OF PACK</Text>
+          <View style={styles.grid}>
+            {rest.map((r) => (
+              <CardTile key={r.card.arenaId ?? r.card.name} ranked={r} />
+            ))}
           </View>
-        )}
+        </>
+      )}
 
-        {rec ? (
-          rec.ranked.map((r, i) => (
-            <CardRow key={r.card.arenaId ?? r.card.name} ranked={r} best={i === 0} />
-          ))
-        ) : (
-          <Text style={styles.empty}>No pack analyzed yet.</Text>
-        )}
-      </View>
+      {match && (
+        <View style={styles.panel}>
+          <Text style={styles.sectionLabel}>MATCH TRACKER</Text>
+          <View style={styles.matchLine}>
+            <Text style={styles.matchText}>Turn {match.turn}</Text>
+            <Text style={styles.matchText}>{match.onThePlay ? "On the play" : "On the draw"}</Text>
+          </View>
+          <Text style={styles.commitLabel}>Opponent revealed</Text>
+          <View style={styles.tags}>
+            {match.opponentRevealed.length ? (
+              match.opponentRevealed.map((name, i) => (
+                <Text key={`${name}-${i}`} style={styles.tag}>
+                  {name}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.muted}>nothing yet</Text>
+            )}
+          </View>
+        </View>
+      )}
 
       <View style={styles.panel}>
-        <Text style={styles.panelTitle}>MATCH TRACKER</Text>
-        {match ? (
-          <View>
-            <View style={styles.matchLine}>
-              <Text style={styles.matchText}>Turn {match.turn}</Text>
-              <Text style={styles.matchText}>{match.onThePlay ? "On the play" : "On the draw"}</Text>
-            </View>
-            <Text style={styles.commitLabel}>Opponent revealed:</Text>
-            <View style={styles.tags}>
-              {match.opponentRevealed.length ? (
-                match.opponentRevealed.map((name, i) => (
-                  <Text key={`${name}-${i}`} style={styles.tag}>
-                    {name}
-                  </Text>
-                ))
-              ) : (
-                <Text style={styles.empty}>nothing yet</Text>
-              )}
-            </View>
-          </View>
-        ) : (
-          <Text style={styles.empty}>No active match.</Text>
-        )}
-      </View>
-
-      <View style={styles.panel}>
-        <Text style={styles.panelTitle}>ANALYZE A PACK</Text>
-        <Text style={styles.help}>
-          Paste a Player.log draft line, or a comma-separated list of card ids (try 90003,90007,90013).
-        </Text>
+        <Text style={styles.sectionLabel}>ANALYZE A PACK</Text>
+        <Text style={styles.help}>Paste a Player.log draft line, or card ids (e.g. 90003,90007,90013).</Text>
         <TextInput
           style={styles.input}
           placeholder="90003,90004,90007,90013"
@@ -155,7 +205,7 @@ export function DraftScreen() {
               void analyze(sampleLogText);
             }}
           >
-            <Text style={styles.buttonText}>Load sample draft</Text>
+            <Text style={styles.buttonText}>Sample draft</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -166,40 +216,74 @@ export function DraftScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.bg },
   content: { padding: 14 },
+  headRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 },
+  h1: { color: palette.text, fontSize: 20, fontWeight: "800" },
+  packMeta: { color: palette.accent, fontWeight: "700", fontSize: 13 },
+  commit: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  commitLabel: { color: palette.muted, fontSize: 12, fontWeight: "700", letterSpacing: 0.5 },
+  pips: { flexDirection: "row", gap: 4 },
+  sectionLabel: { color: palette.muted, fontSize: 12, fontWeight: "700", letterSpacing: 1, marginTop: 16, marginBottom: 8 },
+
+  hero: {
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,212,71,0.5)",
+    backgroundColor: "#181a26"
+  },
+  heroArt: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", opacity: 0.35 },
+  heroOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(16,18,27,0.55)" },
+  heroRow: { flexDirection: "row", padding: 12, gap: 12 },
+  heroCard: { width: 96, height: 134, borderRadius: 6, backgroundColor: "#000" },
+  heroInfo: { flex: 1, justifyContent: "center" },
+  heroTag: {
+    color: "#1a1a1a",
+    backgroundColor: palette.accent,
+    alignSelf: "flex-start",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: "hidden"
+  },
+  heroName: { color: palette.text, fontSize: 18, fontWeight: "800", marginVertical: 6 },
+  heroScoreRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  heroScore: { color: palette.text, fontSize: 26, fontWeight: "800", marginLeft: 4 },
+  heroScoreLabel: { color: palette.muted, fontSize: 12, marginRight: 6 },
+  heroPips: { flexDirection: "row", gap: 3, marginLeft: "auto" },
+  heroReason: { color: palette.muted, fontSize: 11, lineHeight: 16 },
+
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  tile: { width: "31.5%", marginBottom: 12 },
+  tileImageWrap: { position: "relative", borderRadius: 6, overflow: "hidden", aspectRatio: 0.716, backgroundColor: "#000" },
+  tileImage: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
+  cardPlaceholder: { backgroundColor: "#2a2d3d", alignItems: "center", justifyContent: "center" },
+  tileGrade: { position: "absolute", top: 4, left: 4 },
+  tileScore: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1
+  },
+  tileScoreText: { color: "#fff", fontWeight: "800", fontSize: 12 },
+  tileName: { color: palette.muted, fontSize: 10, marginTop: 3 },
+
+  gradeBadge: { borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  gradeText: { fontWeight: "800", color: "#1a1a1a" },
+
   panel: {
     backgroundColor: palette.panel,
     borderColor: palette.border,
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 12
+    marginTop: 12
   },
-  panelHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  panelTitle: { color: palette.muted, fontSize: 12, fontWeight: "700", letterSpacing: 1, marginBottom: 8 },
-  packMeta: { color: palette.accent, fontWeight: "700" },
-  commit: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  commitLabel: { color: palette.muted, fontSize: 12 },
-  cardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    marginBottom: 4,
-    backgroundColor: "rgba(255,255,255,0.03)"
-  },
-  cardRowBest: {
-    backgroundColor: "rgba(255,212,71,0.14)",
-    borderColor: "rgba(255,212,71,0.4)",
-    borderWidth: 1
-  },
-  grade: { width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center", marginRight: 8 },
-  gradeText: { fontWeight: "800", color: "#1a1a1a", fontSize: 12 },
-  cardMain: { flex: 1, minWidth: 0 },
-  cardName: { color: palette.text, fontSize: 14, fontWeight: "600" },
-  cardReasons: { color: palette.muted, fontSize: 10 },
-  pips: { flexDirection: "row", gap: 3 },
-  score: { color: palette.text, fontWeight: "700", fontSize: 14, width: 30, textAlign: "right", marginLeft: 6 },
   matchLine: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   matchText: { color: palette.text, fontSize: 14 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
@@ -213,7 +297,8 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 12
   },
-  empty: { color: palette.muted, fontSize: 13 },
+  muted: { color: palette.muted, fontSize: 12, textAlign: "center", paddingHorizontal: 4 },
+  empty: { color: palette.muted, fontSize: 13, marginVertical: 20, textAlign: "center" },
   help: { color: palette.muted, fontSize: 12, marginBottom: 8 },
   input: {
     backgroundColor: "rgba(0,0,0,0.3)",
@@ -223,7 +308,8 @@ const styles = StyleSheet.create({
     color: palette.text,
     padding: 10,
     minHeight: 44,
-    fontSize: 13
+    fontSize: 13,
+    textAlignVertical: "top"
   },
   buttonRow: { flexDirection: "row", gap: 8, marginTop: 10 },
   button: { backgroundColor: palette.brand, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 14, flex: 1, alignItems: "center" },

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,6 +42,15 @@ function deckColors(deck: Deck): string[] {
 
 function deckSize(deck: Deck): number {
   return deck.main.reduce((n, e) => n + e.quantity, 0);
+}
+
+/** Pick a representative card art for the deck banner (priciest non-land). */
+function bannerArt(deck: Deck): string | undefined {
+  const candidates = deck.main
+    .map((e) => e.card)
+    .filter((c): c is NonNullable<typeof c> => !!c?.artCropUrl && c.rarity !== "land")
+    .sort((a, b) => b.manaValue - a.manaValue);
+  return (candidates[0] ?? deck.main.find((e) => e.card?.artCropUrl)?.card)?.artCropUrl;
 }
 
 function CardThumb({ entry }: { entry: DeckEntry }) {
@@ -196,7 +206,19 @@ export function DecksScreen() {
             <Text style={styles.delete}>Delete</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.deckTitle}>{deck.name}</Text>
+        {bannerArt(deck) ? (
+          <ImageBackground source={{ uri: bannerArt(deck) }} style={styles.banner} imageStyle={styles.bannerImg}>
+            <View style={styles.bannerScrim} />
+            <Text style={styles.bannerTitle}>{deck.name}</Text>
+            <View style={styles.bannerPips}>
+              {deckColors(deck).map((c) => (
+                <Pip key={c} color={c} size={18} />
+              ))}
+            </View>
+          </ImageBackground>
+        ) : (
+          <Text style={styles.deckTitle}>{deck.name}</Text>
+        )}
         <View style={styles.panel}>
           <StatsView deck={deck} stats={stats} />
         </View>
@@ -338,7 +360,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(255,255,255,0.05)",
     borderBottomWidth: 1
   },
-  thumb: { width: 34, height: 48, borderRadius: 4, backgroundColor: "#222" },
+  banner: { height: 130, borderRadius: 12, overflow: "hidden", justifyContent: "flex-end", marginBottom: 12 },
+  bannerImg: { borderRadius: 12 },
+  bannerScrim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(16,18,27,0.45)" },
+  bannerTitle: { color: "#fff", fontSize: 24, fontWeight: "800", paddingHorizontal: 14, textShadowColor: "rgba(0,0,0,0.8)", textShadowRadius: 6 },
+  bannerPips: { flexDirection: "row", gap: 4, paddingHorizontal: 14, paddingBottom: 12, paddingTop: 4 },
+  thumb: { width: 42, height: 59, borderRadius: 4, backgroundColor: "#222" },
   thumbPlaceholder: { alignItems: "center", justifyContent: "center" },
   thumbQ: { color: palette.muted, fontWeight: "800" },
   qty: { color: palette.text, fontWeight: "700", width: 26 },

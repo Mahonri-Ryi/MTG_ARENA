@@ -52,20 +52,48 @@ function ManaPips({ colors }: { colors: string[] }) {
   );
 }
 
-function CardRow({ ranked, best }: { ranked: RankedCard; best: boolean }) {
+function HeroPick({ ranked }: { ranked: RankedCard }) {
+  const { card } = ranked;
   return (
-    <li className={best ? "card-row best" : "card-row"}>
+    <div className="hero" style={card.artCropUrl ? { backgroundImage: `url(${card.artCropUrl})` } : undefined}>
+      <div className="hero-scrim" />
+      <div className="hero-body">
+        {card.imageUrl && <img className="hero-card" src={card.imageUrl} alt={card.name} />}
+        <div className="hero-info">
+          <span className="hero-tag">TOP PICK</span>
+          <span className="hero-name">{card.name}</span>
+          <div className="hero-score-row">
+            <span className="grade" style={{ background: GRADE_HEX[ranked.grade] ?? "#888" }}>
+              {ranked.grade}
+            </span>
+            <span className="hero-score">{ranked.score.toFixed(0)}</span>
+            <span className="hero-score-label">/100</span>
+            <ManaPips colors={card.colors} />
+          </div>
+          <span className="card-reasons">{ranked.reasons.slice(0, 3).join(" · ")}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CardRow({ ranked }: { ranked: RankedCard }) {
+  const { card } = ranked;
+  return (
+    <li className="card-row">
+      {card.imageUrl ? (
+        <img className="row-thumb" src={card.imageUrl} alt={card.name} />
+      ) : (
+        <span className="row-thumb row-thumb-empty" />
+      )}
       <span className="grade" style={{ background: GRADE_HEX[ranked.grade] ?? "#888" }}>
         {ranked.grade}
       </span>
       <span className="card-main">
-        <span className="card-name">
-          {best && <span className="star">★</span>}
-          {ranked.card.name}
-        </span>
+        <span className="card-name">{card.name}</span>
         <span className="card-reasons">{ranked.reasons.join(" · ")}</span>
       </span>
-      <ManaPips colors={ranked.card.colors} />
+      <ManaPips colors={card.colors} />
       <span className="score">{ranked.score.toFixed(0)}</span>
     </li>
   );
@@ -116,12 +144,15 @@ export function App() {
             Committed colors: <ManaPips colors={update.committedColors} />
           </div>
         )}
-        {rec ? (
-          <ul className="card-list">
-            {rec.ranked.map((r, i) => (
-              <CardRow key={r.card.arenaId ?? r.card.name} ranked={r} best={i === 0} />
-            ))}
-          </ul>
+        {rec?.bestPick ? (
+          <>
+            <HeroPick ranked={rec.bestPick} />
+            <ul className="card-list">
+              {rec.ranked.slice(1).map((r) => (
+                <CardRow key={r.card.arenaId ?? r.card.name} ranked={r} />
+              ))}
+            </ul>
+          </>
         ) : (
           <p className="empty">Waiting for a draft pack…</p>
         )}
