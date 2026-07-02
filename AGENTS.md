@@ -16,6 +16,23 @@ those events into pick recommendations and an in-game tracker.
 - `apps/mobile` (`@mtg-coach/mobile`) — Expo / React Native companion (runs on
   Android and web).
 
+## Data & catalog freshness (rule)
+
+The card catalog **must always be sourced live from Scryfall** so it stays
+current with zero maintenance:
+
+- Sets come from `ScryfallCardSource.listSets()` (`GET /sets`) and cards from
+  `searchCards()` (`GET /cards/search`). Sets are filtered by **set _type_**
+  (`BROWSABLE_SET_TYPES`), never by a hardcoded list of set codes — so a brand
+  new set appears automatically the day it lands on Scryfall.
+- **Do not** hardcode/pin a set list or ship a static catalog snapshot, and do
+  not add long-lived persistent caching of the catalog. The mobile Cards tab
+  re-fetches on open and supports pull-to-refresh.
+- This contract is locked by `packages/core/test/sets.test.ts` (it fails if the
+  set list stops being type-based/live). Keep that test green.
+- The bundled `packages/core/src/data/*.json` is **only** an offline fallback /
+  demo seed for drafts — it is not the catalog and should stay small.
+
 ## Standard commands
 
 Package scripts are the source of truth; see the root and per-package

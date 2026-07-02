@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -47,6 +48,7 @@ export function CollectionScreen() {
   const [sets, setSets] = useState<MtgSet[]>([]);
   const [setQuery, setSetQuery] = useState("");
   const [loadingSets, setLoadingSets] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeSet, setActiveSet] = useState<MtgSet | null>(null);
 
   const [filters, setFilters] = useState<{ colors: string[]; rarities: string[]; types: string[]; name: string }>({
@@ -61,20 +63,18 @@ export function CollectionScreen() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingCards, setLoadingCards] = useState(false);
 
-  useEffect(() => {
-    console.log("[CollectionScreen] Fetching sets...");
-    void getScryfall()
-      .listSets()
-      .then((s) => {
-        console.log("[CollectionScreen] Got sets:", s.length, s.slice(0, 3));
-        setSets(s);
-        setLoadingSets(false);
-      })
-      .catch((err) => {
-        console.error("[CollectionScreen] Error fetching sets:", err);
-        setLoadingSets(false);
-      });
+  // Always pull the set catalog live from Scryfall so new sets appear the day
+  // they publish. Runs on open and on pull-to-refresh.
+  const loadSets = useCallback(async () => {
+    const s = await getScryfall().listSets();
+    setSets(s);
+    setLoadingSets(false);
+    setRefreshing(false);
   }, []);
+
+  useEffect(() => {
+    void loadSets();
+  }, [loadSets]);
 
   const runSearch = useCallback(
     async (set: MtgSet, f: typeof filters, nextPage: number, append: boolean) => {
@@ -126,8 +126,24 @@ export function CollectionScreen() {
         s.code.toLowerCase().includes(setQuery.toLowerCase())
     );
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void loadSets();
+            }}
+            tintColor={palette.accent}
+            colors={[palette.accent]}
+          />
+        }
+      >
         <Text style={styles.h1}>Card Sets</Text>
+        <Text style={styles.caption}>Live from Scryfall · pull to refresh for new sets</Text>
         <TextInput
           style={styles.search}
           placeholder="Search sets…"
@@ -262,6 +278,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: 14, paddingBottom: 24 },
   h1: { color: palette.text, fontSize: 22, fontWeight: "800", marginBottom: 6 },
+  caption: { color: palette.faint, fontSize: 11, marginBottom: 2 },
   backRow: { marginBottom: 10 },
   back: { color: palette.accent, fontSize: 15, fontWeight: "700" },
   search: {

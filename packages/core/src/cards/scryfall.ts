@@ -13,6 +13,14 @@ const BROWSABLE_SET_TYPES = new Set([
   "commander"
 ]);
 
+/**
+ * Minimal fetch signature we depend on. Declared locally (rather than reusing
+ * `typeof fetch`) because the DOM and React Native lib typings disagree on the
+ * first argument (`RequestInfo | URL` vs `RequestInfo`); we only ever pass a
+ * string URL, so this keeps the package portable across both environments.
+ */
+export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+
 interface ScryfallCard {
   name: string;
   cmc?: number;
@@ -64,14 +72,14 @@ function toCard(sc: ScryfallCard, arenaId?: number): Card {
  * gentle, so requests are made sequentially with a small delay.
  */
 export class ScryfallCardSource implements CardSource {
-  private readonly fetchImpl: typeof fetch;
+  private readonly fetchImpl: FetchLike;
 
-  constructor(fetchImpl?: typeof fetch, private readonly delayMs = 60) {
+  constructor(fetchImpl?: FetchLike, private readonly delayMs = 60) {
     // Wrap the global fetch so it keeps its binding to the realm's global
     // object. Storing/calling `this.fetchImpl(...)` with a bare `fetch`
     // reference throws "Illegal invocation" in browsers (incl. React Native
     // Web), which would otherwise silently return empty results.
-    this.fetchImpl = fetchImpl ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
+    this.fetchImpl = fetchImpl ?? ((input, init) => fetch(input, init));
   }
 
   async getByArenaId(arenaId: number): Promise<Card | undefined> {
