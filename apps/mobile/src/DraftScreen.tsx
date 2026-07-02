@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   Coach,
   LocalCardSource,
@@ -10,16 +11,22 @@ import {
   type PickRecommendation,
   type RankedCard
 } from "@mtg-coach/core";
-import { GRADE_HEX, palette, Pip } from "./theme";
+import {
+  GradeChip,
+  GradientButton,
+  palette,
+  Pip,
+  radius,
+  RARITY_HEX,
+  SectionLabel,
+  shadow,
+  Surface
+} from "./theme";
 
 function buildCoach(): Coach {
-  return new Coach(new LocalCardSource(sampleCards), {
-    ratings: sampleRatings,
-    colorCommitmentWeight: 8
-  });
+  return new Coach(new LocalCardSource(sampleCards), { ratings: sampleRatings, colorCommitmentWeight: 8 });
 }
 
-/** Accept either a raw log blob or a bare comma-separated list of arena ids. */
 function toLogText(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return sampleLogText;
@@ -31,72 +38,78 @@ function toLogText(input: string): string {
   return trimmed;
 }
 
-function GradeBadge({ grade, size = 26 }: { grade: string; size?: number }) {
-  return (
-    <View style={[styles.gradeBadge, { width: size, height: size, backgroundColor: GRADE_HEX[grade] ?? "#888" }]}>
-      <Text style={[styles.gradeText, { fontSize: size * 0.5 }]}>{grade}</Text>
-    </View>
-  );
-}
-
-/** The recommended pick, shown Untapped-style as a large hero card. */
 function HeroPick({ ranked }: { ranked: RankedCard }) {
   const { card } = ranked;
   return (
-    <View style={styles.hero}>
-      {card.artCropUrl && (
-        <Image source={{ uri: card.artCropUrl }} style={styles.heroArt} resizeMode="cover" blurRadius={1} />
-      )}
-      <View style={styles.heroOverlay} />
+    <View style={[styles.hero, shadow.card]}>
+      {card.artCropUrl && <Image source={{ uri: card.artCropUrl }} style={styles.heroArt} resizeMode="cover" />}
+      <LinearGradient
+        colors={["rgba(10,12,20,0.35)", "rgba(10,12,20,0.92)"]}
+        style={styles.heroScrim}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       <View style={styles.heroRow}>
         {card.imageUrl ? (
           <Image source={{ uri: card.imageUrl }} style={styles.heroCard} resizeMode="contain" />
         ) : (
-          <View style={[styles.heroCard, styles.cardPlaceholder]} />
+          <View style={[styles.heroCard, styles.placeholder]} />
         )}
         <View style={styles.heroInfo}>
-          <Text style={styles.heroTag}>TOP PICK</Text>
+          <LinearGradient colors={["#ffcf5a", "#ff9a3d"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.topPickTag}>
+            <Text style={styles.topPickText}>★ TOP PICK</Text>
+          </LinearGradient>
           <Text style={styles.heroName} numberOfLines={2}>
             {card.name}
           </Text>
           <View style={styles.heroScoreRow}>
-            <GradeBadge grade={ranked.grade} size={30} />
+            <GradeChip grade={ranked.grade} size={34} />
             <Text style={styles.heroScore}>{ranked.score.toFixed(0)}</Text>
             <Text style={styles.heroScoreLabel}>/100</Text>
-            <View style={styles.heroPips}>
-              {card.colors.length ? card.colors.map((c) => <Pip key={c} color={c} size={16} />) : <Pip color="C" size={16} />}
+            <View style={styles.pipRow}>
+              {card.colors.length ? card.colors.map((c) => <Pip key={c} color={c} size={17} />) : <Pip color="C" size={17} />}
             </View>
           </View>
-          {ranked.reasons.slice(0, 3).map((r, i) => (
-            <Text key={i} style={styles.heroReason} numberOfLines={1}>
-              • {r}
-            </Text>
-          ))}
+          <View style={styles.reasonWrap}>
+            {ranked.reasons.slice(0, 3).map((r, i) => (
+              <Text key={i} style={styles.reasonChip} numberOfLines={1}>
+                {r}
+              </Text>
+            ))}
+          </View>
         </View>
       </View>
     </View>
   );
 }
 
-/** A card in the pack grid: full art with grade + score overlays. */
-function CardTile({ ranked }: { ranked: RankedCard }) {
+function CardTile({ ranked, rank }: { ranked: RankedCard; rank: number }) {
   const { card } = ranked;
+  const rarity = RARITY_HEX[card.rarity] ?? RARITY_HEX.unknown;
   return (
     <View style={styles.tile}>
-      <View style={styles.tileImageWrap}>
+      <View style={[styles.tileImageWrap, { borderColor: rarity }, shadow.soft]}>
         {card.imageUrl ? (
           <Image source={{ uri: card.imageUrl }} style={styles.tileImage} resizeMode="cover" />
         ) : (
-          <View style={[styles.tileImage, styles.cardPlaceholder]}>
-            <Text style={styles.muted}>{card.name}</Text>
+          <View style={[styles.tileImage, styles.placeholder]}>
+            <Text style={styles.tileFallback}>{card.name}</Text>
           </View>
         )}
         <View style={styles.tileGrade}>
-          <GradeBadge grade={ranked.grade} size={24} />
+          <GradeChip grade={ranked.grade} size={22} />
         </View>
-        <View style={styles.tileScore}>
-          <Text style={styles.tileScoreText}>{ranked.score.toFixed(0)}</Text>
+        <View style={styles.rankBadge}>
+          <Text style={styles.rankText}>#{rank}</Text>
         </View>
+        <LinearGradient colors={["transparent", "rgba(0,0,0,0.85)"]} style={styles.tileFooter}>
+          <Text style={styles.tileScore}>{ranked.score.toFixed(0)}</Text>
+          <View style={styles.tilePips}>
+            {card.colors.slice(0, 2).map((c) => (
+              <Pip key={c} color={c} size={13} />
+            ))}
+          </View>
+        </LinearGradient>
       </View>
       <Text style={styles.tileName} numberOfLines={1}>
         {card.name}
@@ -123,196 +136,203 @@ export function DraftScreen() {
     void analyze(sampleLogText);
   }, [analyze]);
 
-  const packLabel = useMemo(
-    () => (rec ? `Pack ${rec.pack.packNumber}, Pick ${rec.pack.pickNumber}` : ""),
-    [rec]
-  );
-
+  const packLabel = useMemo(() => (rec ? `Pack ${rec.pack.packNumber} · Pick ${rec.pack.pickNumber}` : ""), [rec]);
   const rest = rec ? rec.ranked.slice(1) : [];
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.headRow}>
-        <Text style={styles.h1}>Draft Assistant</Text>
-        {!!packLabel && <Text style={styles.packMeta}>{packLabel}</Text>}
-      </View>
-
-      {colors.length > 0 && (
-        <View style={styles.commit}>
-          <Text style={styles.commitLabel}>Your colors</Text>
-          <View style={styles.pips}>
-            {colors.map((c) => (
-              <Pip key={c} color={c} size={20} />
-            ))}
-          </View>
+        <View>
+          <Text style={styles.h1}>Draft Assistant</Text>
+          {!!packLabel && <Text style={styles.packMeta}>{packLabel}</Text>}
         </View>
-      )}
+        {colors.length > 0 && (
+          <View style={styles.colorsCard}>
+            <Text style={styles.colorsLabel}>YOUR COLORS</Text>
+            <View style={styles.pipRow}>
+              {colors.map((c) => (
+                <Pip key={c} color={c} size={20} />
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
 
       {rec?.bestPick ? <HeroPick ranked={rec.bestPick} /> : <Text style={styles.empty}>Waiting for a pack…</Text>}
 
       {rest.length > 0 && (
         <>
-          <Text style={styles.sectionLabel}>REST OF PACK</Text>
+          <SectionLabel>REST OF PACK</SectionLabel>
           <View style={styles.grid}>
-            {rest.map((r) => (
-              <CardTile key={r.card.arenaId ?? r.card.name} ranked={r} />
+            {rest.map((r, i) => (
+              <CardTile key={r.card.arenaId ?? r.card.name} ranked={r} rank={i + 2} />
             ))}
           </View>
         </>
       )}
 
       {match && (
-        <View style={styles.panel}>
-          <Text style={styles.sectionLabel}>MATCH TRACKER</Text>
-          <View style={styles.matchLine}>
-            <Text style={styles.matchText}>Turn {match.turn}</Text>
-            <Text style={styles.matchText}>{match.onThePlay ? "On the play" : "On the draw"}</Text>
-          </View>
-          <Text style={styles.commitLabel}>Opponent revealed</Text>
-          <View style={styles.tags}>
-            {match.opponentRevealed.length ? (
-              match.opponentRevealed.map((name, i) => (
-                <Text key={`${name}-${i}`} style={styles.tag}>
-                  {name}
-                </Text>
-              ))
-            ) : (
-              <Text style={styles.muted}>nothing yet</Text>
-            )}
-          </View>
-        </View>
+        <>
+          <SectionLabel>MATCH TRACKER</SectionLabel>
+          <Surface>
+            <View style={styles.matchLine}>
+              <View style={styles.matchStat}>
+                <Text style={styles.matchStatBig}>{match.turn}</Text>
+                <Text style={styles.matchStatLabel}>TURN</Text>
+              </View>
+              <View style={styles.matchStat}>
+                <Text style={styles.matchStatBig}>{match.onThePlay ? "PLAY" : "DRAW"}</Text>
+                <Text style={styles.matchStatLabel}>ON THE</Text>
+              </View>
+            </View>
+            <Text style={styles.miniLabel}>Opponent revealed</Text>
+            <View style={styles.tags}>
+              {match.opponentRevealed.length ? (
+                match.opponentRevealed.map((name, i) => (
+                  <Text key={`${name}-${i}`} style={styles.tag}>
+                    {name}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.muted}>nothing yet</Text>
+              )}
+            </View>
+          </Surface>
+        </>
       )}
 
-      <View style={styles.panel}>
-        <Text style={styles.sectionLabel}>ANALYZE A PACK</Text>
+      <SectionLabel>ANALYZE A PACK</SectionLabel>
+      <Surface>
         <Text style={styles.help}>Paste a Player.log draft line, or card ids (e.g. 90003,90007,90013).</Text>
         <TextInput
           style={styles.input}
           placeholder="90003,90004,90007,90013"
-          placeholderTextColor="#6c7293"
+          placeholderTextColor={palette.faint}
           value={input}
           onChangeText={setInput}
           multiline
         />
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={() => analyze(toLogText(input))}>
-            <Text style={styles.buttonText}>Analyze</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonAlt]}
+          <GradientButton label="Analyze" onPress={() => analyze(toLogText(input))} style={{ flex: 1 }} />
+          <GradientButton
+            label="Sample draft"
+            variant="ghost"
             onPress={() => {
               setInput("");
               void analyze(sampleLogText);
             }}
-          >
-            <Text style={styles.buttonText}>Sample draft</Text>
-          </TouchableOpacity>
+            style={{ flex: 1 }}
+          />
         </View>
-      </View>
+      </Surface>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.bg },
-  content: { padding: 14 },
-  headRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 },
-  h1: { color: palette.text, fontSize: 20, fontWeight: "800" },
-  packMeta: { color: palette.accent, fontWeight: "700", fontSize: 13 },
-  commit: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
-  commitLabel: { color: palette.muted, fontSize: 12, fontWeight: "700", letterSpacing: 0.5 },
-  pips: { flexDirection: "row", gap: 4 },
-  sectionLabel: { color: palette.muted, fontSize: 12, fontWeight: "700", letterSpacing: 1, marginTop: 16, marginBottom: 8 },
-
-  hero: {
-    borderRadius: 14,
-    overflow: "hidden",
+  screen: { flex: 1 },
+  content: { padding: 14, paddingBottom: 24 },
+  headRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
+  h1: { color: palette.text, fontSize: 22, fontWeight: "800" },
+  packMeta: { color: palette.accent, fontWeight: "700", fontSize: 12, marginTop: 2 },
+  colorsCard: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: radius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignItems: "flex-end",
     borderWidth: 1,
-    borderColor: "rgba(255,212,71,0.5)",
-    backgroundColor: "#181a26"
+    borderColor: palette.line
   },
-  heroArt: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", opacity: 0.35 },
-  heroOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(16,18,27,0.55)" },
-  heroRow: { flexDirection: "row", padding: 12, gap: 12 },
-  heroCard: { width: 96, height: 134, borderRadius: 6, backgroundColor: "#000" },
+  colorsLabel: { color: palette.faint, fontSize: 9, fontWeight: "800", letterSpacing: 1, marginBottom: 4 },
+
+  hero: { borderRadius: radius.lg, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,207,90,0.4)", backgroundColor: "#12141f" },
+  heroArt: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", opacity: 0.5 },
+  heroScrim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  heroRow: { flexDirection: "row", padding: 14, gap: 14 },
+  heroCard: { width: 104, height: 145, borderRadius: 8, backgroundColor: "#000" },
   heroInfo: { flex: 1, justifyContent: "center" },
-  heroTag: {
-    color: "#1a1a1a",
-    backgroundColor: palette.accent,
+  topPickTag: { alignSelf: "flex-start", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  topPickText: { color: "#1a1206", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  heroName: { color: "#fff", fontSize: 19, fontWeight: "800", marginVertical: 7 },
+  heroScoreRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 10 },
+  heroScore: { color: "#fff", fontSize: 28, fontWeight: "900", marginLeft: 3 },
+  heroScoreLabel: { color: palette.muted, fontSize: 12, marginRight: 4 },
+  pipRow: { flexDirection: "row", gap: 4 },
+  reasonWrap: { gap: 4 },
+  reasonChip: {
+    color: palette.text,
+    fontSize: 11,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     alignSelf: "flex-start",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
     overflow: "hidden"
   },
-  heroName: { color: palette.text, fontSize: 18, fontWeight: "800", marginVertical: 6 },
-  heroScoreRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-  heroScore: { color: palette.text, fontSize: 26, fontWeight: "800", marginLeft: 4 },
-  heroScoreLabel: { color: palette.muted, fontSize: 12, marginRight: 6 },
-  heroPips: { flexDirection: "row", gap: 3, marginLeft: "auto" },
-  heroReason: { color: palette.muted, fontSize: 11, lineHeight: 16 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  tile: { width: "31.5%", marginBottom: 12 },
-  tileImageWrap: { position: "relative", borderRadius: 6, overflow: "hidden", aspectRatio: 0.716, backgroundColor: "#000" },
+  tile: { width: "31.5%", marginBottom: 14 },
+  tileImageWrap: { position: "relative", borderRadius: 8, overflow: "hidden", aspectRatio: 0.716, backgroundColor: "#000", borderWidth: 2 },
   tileImage: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
-  cardPlaceholder: { backgroundColor: "#2a2d3d", alignItems: "center", justifyContent: "center" },
-  tileGrade: { position: "absolute", top: 4, left: 4 },
-  tileScore: {
+  tileFallback: { color: palette.muted, fontSize: 11, textAlign: "center", paddingHorizontal: 4 },
+  placeholder: { backgroundColor: "#22263a", alignItems: "center", justifyContent: "center" },
+  tileGrade: { position: "absolute", top: 5, left: 5 },
+  rankBadge: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    borderRadius: 4,
+    top: 5,
+    right: 5,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    borderRadius: 5,
     paddingHorizontal: 5,
     paddingVertical: 1
   },
-  tileScoreText: { color: "#fff", fontWeight: "800", fontSize: 12 },
-  tileName: { color: palette.muted, fontSize: 10, marginTop: 3 },
-
-  gradeBadge: { borderRadius: 6, alignItems: "center", justifyContent: "center" },
-  gradeText: { fontWeight: "800", color: "#1a1a1a" },
-
-  panel: {
-    backgroundColor: palette.panel,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 12
+  rankText: { color: "#fff", fontSize: 10, fontWeight: "800" },
+  tileFooter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    paddingHorizontal: 6,
+    paddingBottom: 5,
+    paddingTop: 18
   },
-  matchLine: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  matchText: { color: palette.text, fontSize: 14 },
-  tags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
+  tileScore: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  tilePips: { flexDirection: "row", gap: 2 },
+  tileName: { color: palette.muted, fontSize: 10, marginTop: 5, fontWeight: "600" },
+
+  matchLine: { flexDirection: "row", gap: 24, marginBottom: 12 },
+  matchStat: { alignItems: "flex-start" },
+  matchStatBig: { color: palette.text, fontSize: 22, fontWeight: "900" },
+  matchStatLabel: { color: palette.faint, fontSize: 9, fontWeight: "800", letterSpacing: 1 },
+  miniLabel: { color: palette.muted, fontSize: 11, fontWeight: "700", marginBottom: 6 },
+  tags: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   tag: {
-    backgroundColor: "rgba(224,83,58,0.2)",
+    backgroundColor: "rgba(224,83,58,0.18)",
     borderColor: "rgba(224,83,58,0.5)",
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     color: palette.text,
     fontSize: 12
   },
-  muted: { color: palette.muted, fontSize: 12, textAlign: "center", paddingHorizontal: 4 },
-  empty: { color: palette.muted, fontSize: 13, marginVertical: 20, textAlign: "center" },
-  help: { color: palette.muted, fontSize: 12, marginBottom: 8 },
+  muted: { color: palette.muted, fontSize: 12 },
+  empty: { color: palette.muted, fontSize: 13, marginVertical: 24, textAlign: "center" },
+  help: { color: palette.muted, fontSize: 12, marginBottom: 10 },
   input: {
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderColor: palette.line,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.md,
     color: palette.text,
-    padding: 10,
-    minHeight: 44,
+    padding: 12,
+    minHeight: 46,
     fontSize: 13,
     textAlignVertical: "top"
   },
-  buttonRow: { flexDirection: "row", gap: 8, marginTop: 10 },
-  button: { backgroundColor: palette.brand, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 14, flex: 1, alignItems: "center" },
-  buttonAlt: { backgroundColor: "#3a3f5c" },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 13 }
+  buttonRow: { flexDirection: "row", gap: 10, marginTop: 12 }
 });

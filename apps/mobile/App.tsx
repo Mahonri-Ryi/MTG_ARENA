@@ -1,58 +1,77 @@
 import { useState } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { DraftScreen } from "./src/DraftScreen";
 import { DecksScreen } from "./src/DecksScreen";
-import { palette } from "./src/theme";
+import { bgGradient, emberGradient, palette } from "./src/theme";
 
-type Tab = "draft" | "decks";
+type Tab = "decks" | "draft";
+
+const TABS: { key: Tab; label: string; glyph: string }[] = [
+  { key: "decks", label: "Decks", glyph: "▤" },
+  { key: "draft", label: "Draft", glyph: "◈" }
+];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("decks");
 
   return (
-    <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <Text style={styles.logo}>MTG</Text>
-        <Text style={styles.title}>Arena Coach</Text>
-      </View>
+    <LinearGradient colors={bgGradient} style={styles.root}>
+      <SafeAreaView style={styles.root}>
+        <StatusBar barStyle="light-content" />
 
-      <View style={styles.body}>{tab === "draft" ? <DraftScreen /> : <DecksScreen />}</View>
+        <View style={styles.header}>
+          <LinearGradient colors={emberGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoMark}>
+            <Text style={styles.logoGlyph}>✦</Text>
+          </LinearGradient>
+          <View>
+            <Text style={styles.title}>Arena Coach</Text>
+            <Text style={styles.subtitle}>Draft & deck intelligence</Text>
+          </View>
+        </View>
 
-      <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tab} onPress={() => setTab("decks")}>
-          <Text style={[styles.tabText, tab === "decks" && styles.tabActive]}>Decks</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab} onPress={() => setTab("draft")}>
-          <Text style={[styles.tabText, tab === "draft" && styles.tabActive]}>Draft</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <View style={styles.body}>{tab === "draft" ? <DraftScreen /> : <DecksScreen />}</View>
+
+        <View style={styles.tabBar}>
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            return (
+              <TouchableOpacity key={t.key} style={styles.tab} activeOpacity={0.8} onPress={() => setTab(t.key)}>
+                <View style={[styles.tabInner, active && styles.tabInnerActive]}>
+                  <Text style={[styles.tabGlyph, active && styles.tabTextActive]}>{t.glyph}</Text>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.bg },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingTop: 40, paddingBottom: 10 },
-  logo: {
-    backgroundColor: palette.brand,
-    color: "#1a1a1a",
-    fontWeight: "800",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
-    overflow: "hidden",
-    fontSize: 14
-  },
-  title: { color: palette.text, fontSize: 18, fontWeight: "700", marginLeft: 8 },
+  root: { flex: 1 },
+  header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 40, paddingBottom: 12 },
+  logoMark: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  logoGlyph: { color: "#1a1206", fontSize: 18, fontWeight: "900" },
+  title: { color: palette.text, fontSize: 18, fontWeight: "800", letterSpacing: 0.2 },
+  subtitle: { color: palette.faint, fontSize: 11, marginTop: 1 },
   body: { flex: 1 },
   tabBar: {
     flexDirection: "row",
-    borderTopColor: palette.border,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 10,
+    borderTopColor: palette.line,
     borderTopWidth: 1,
-    backgroundColor: "rgba(0,0,0,0.3)"
+    backgroundColor: "rgba(8,10,16,0.6)",
+    gap: 8
   },
-  tab: { flex: 1, alignItems: "center", paddingVertical: 14 },
-  tabText: { color: palette.muted, fontSize: 14, fontWeight: "700" },
-  tabActive: { color: palette.accent }
+  tab: { flex: 1 },
+  tabInner: { alignItems: "center", paddingVertical: 8, borderRadius: 12, flexDirection: "row", justifyContent: "center", gap: 6 },
+  tabInnerActive: { backgroundColor: "rgba(255,207,90,0.12)", borderWidth: 1, borderColor: "rgba(255,207,90,0.35)" },
+  tabGlyph: { color: palette.faint, fontSize: 14 },
+  tabText: { color: palette.faint, fontSize: 13, fontWeight: "700" },
+  tabTextActive: { color: palette.accent }
 });
