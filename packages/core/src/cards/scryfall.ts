@@ -1,6 +1,17 @@
-import type { Card, CardRarity, CardSource } from "../types";
+import type { Card, CardRarity, CardSearchPage, CardSource, CollectionFilters, MtgSet } from "../types";
+import { buildSearchQuery } from "../collection/query";
 
 const SCRYFALL_BASE = "https://api.scryfall.com";
+
+/** Set types worth showing in a "collection" browser (skip tokens, memorabilia, etc.). */
+const BROWSABLE_SET_TYPES = new Set([
+  "core",
+  "expansion",
+  "masters",
+  "draft_innovation",
+  "alchemy",
+  "commander"
+]);
 
 interface ScryfallCard {
   name: string;
@@ -87,6 +98,48 @@ export class ScryfallCardSource implements CardSource {
       return toCard(json);
     } catch {
       return undefined;
+    }
+  }
+
+  /** List browsable MTG sets (newest first), for the collection UI. */
+  async listSets(): Promise<MtgSet[]> {
+    try {
+      const res = await this.fetchImpl(`${SCRYFALL_BASE}/sets`);
+      if (!res.ok) return [];
+      const json = (await res.json()) as {
+        data?: { code: string; name: string; card_count: number; released_at?: string; set_type: string }[];
+      };
+      return (json.data ?? [])
+        .filter((s) => BROWSABLE_SET_TYPES.has(s.set_type) && s.card_count > 0)
+        .map((s) => ({
+          code: s.code,
+          name: s.name,
+          cardCount: s.card_count,
+          releasedAt: s.released_at,
+          setType: s.set_type
+        }))
+        .sort((a, b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? ""));
+    } catch {
+      return [];
+    }
+  }
+
+  /** Search the card catalog with collection filters; paginated (175/page). */
+  async searchCards(filters: CollectionFilters, page = 1): Promise<CardSearchPage> {
+    const query = buildSearchQuery(filters);
+    if (!query) return { cards: [], totalCards: 0, hasMore: false };
+    try {
+      const url = `${SCRYFALL_BASE}/cards/search?q=${encodeURIComponent(query)}&order=set&unique=cards&page=${page}`;
+      const res = await this.fetchImpl(url);
+      if (!res.ok) return { cards: [], totalCards: 0, hasMore: false };
+      const json = (await res.json()) as { data?: ScryfallCard[]; total_cards?: number; has_more?: boolean };
+      return {
+        cards: (json.data ?? []).map((sc) => toCard(sc)),
+        totalCards: json.total_cards ?? 0,
+        hasMore: Boolean(json.has_more)
+      };
+    } catch {
+      return { cards: [], totalCards: 0, hasMore: false };
     }
   }
 

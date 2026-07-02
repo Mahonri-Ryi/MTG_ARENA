@@ -82,6 +82,35 @@ export interface CardSource {
   getManyByName(names: string[]): Promise<Card[]>;
 }
 
+/** An MTG set (expansion/core/etc.) as surfaced in the collection browser. */
+export interface MtgSet {
+  code: string;
+  name: string;
+  cardCount: number;
+  releasedAt?: string;
+  setType: string;
+}
+
+/** Filters for browsing the card catalog, mirroring MTG Arena's collection UI. */
+export interface CollectionFilters {
+  setCode?: string;
+  /** Any of W/U/B/R/G (card contains the color); use "C" for colorless. */
+  colors?: string[];
+  /** Any of common/uncommon/rare/mythic. */
+  rarities?: string[];
+  /** Any of creature/instant/sorcery/... (card type line contains). */
+  types?: string[];
+  /** Free-text name search. */
+  name?: string;
+}
+
+/** A page of card search results. */
+export interface CardSearchPage {
+  cards: Card[];
+  totalCards: number;
+  hasMore: boolean;
+}
+
 /** One line of a decklist: a quantity of a named card. */
 export interface DeckEntry {
   name: string;

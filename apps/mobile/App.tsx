@@ -3,12 +3,14 @@ import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } fro
 import { LinearGradient } from "expo-linear-gradient";
 import { DraftScreen } from "./src/DraftScreen";
 import { DecksScreen } from "./src/DecksScreen";
+import { CollectionScreen } from "./src/CollectionScreen";
 import { bgGradient, emberGradient, palette } from "./src/theme";
 
-type Tab = "decks" | "draft";
+type Tab = "decks" | "cards" | "draft";
 
 const TABS: { key: Tab; label: string; glyph: string }[] = [
   { key: "decks", label: "Decks", glyph: "▤" },
+  { key: "cards", label: "Cards", glyph: "◧" },
   { key: "draft", label: "Draft", glyph: "◈" }
 ];
 
@@ -30,7 +32,9 @@ export default function App() {
           </View>
         </View>
 
-        <View style={styles.body}>{tab === "draft" ? <DraftScreen /> : <DecksScreen />}</View>
+        <View style={styles.body}>
+          {tab === "draft" ? <DraftScreen /> : tab === "cards" ? <CollectionScreen /> : <DecksScreen />}
+        </View>
 
         <View style={styles.tabBar}>
           {TABS.map((t) => {
