@@ -4,5 +4,7 @@ export * from "./cards/scryfall";
 export * from "./cards/localSource";
 export * from "./draft/engine";
 export * from "./match/odds";
+export * from "./deck/parser";
+export * from "./deck/analyze";
 export * from "./coach";
 export * from "./data/index";

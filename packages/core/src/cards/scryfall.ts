@@ -77,4 +77,38 @@ export class ScryfallCardSource implements CardSource {
     }
     return out;
   }
+
+  async getByName(name: string): Promise<Card | undefined> {
+    try {
+      const res = await this.fetchImpl(`${SCRYFALL_BASE}/cards/named?exact=${encodeURIComponent(name)}`);
+      if (!res.ok) return undefined;
+      const json = (await res.json()) as ScryfallCard;
+      return toCard(json);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Batch name lookup via Scryfall's `/cards/collection` endpoint (max 75/req). */
+  async getManyByName(names: string[]): Promise<Card[]> {
+    const out: Card[] = [];
+    for (let i = 0; i < names.length; i += 75) {
+      const chunk = names.slice(i, i + 75);
+      try {
+        const res = await this.fetchImpl(`${SCRYFALL_BASE}/cards/collection`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifiers: chunk.map((name) => ({ name })) })
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { data?: ScryfallCard[] };
+          for (const sc of json.data ?? []) out.push(toCard(sc));
+        }
+      } catch {
+        /* skip this chunk on failure */
+      }
+      if (this.delayMs > 0) await new Promise((r) => setTimeout(r, this.delayMs));
+    }
+    return out;
+  }
 }

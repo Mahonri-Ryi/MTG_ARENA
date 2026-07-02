@@ -6,6 +6,7 @@ import type { Card, CardSource } from "../types";
  */
 export class LocalCardSource implements CardSource {
   private readonly byId = new Map<number, Card>();
+  private readonly byName = new Map<string, Card>();
 
   constructor(cards: Card[] = []) {
     for (const card of cards) this.add(card);
@@ -13,6 +14,7 @@ export class LocalCardSource implements CardSource {
 
   add(card: Card): void {
     if (card.arenaId !== undefined) this.byId.set(card.arenaId, card);
+    this.byName.set(card.name.toLowerCase(), card);
   }
 
   has(arenaId: number): boolean {
@@ -26,6 +28,16 @@ export class LocalCardSource implements CardSource {
   async getManyByArenaId(arenaIds: number[]): Promise<Card[]> {
     return arenaIds
       .map((id) => this.byId.get(id))
+      .filter((c): c is Card => c !== undefined);
+  }
+
+  async getByName(name: string): Promise<Card | undefined> {
+    return this.byName.get(name.toLowerCase());
+  }
+
+  async getManyByName(names: string[]): Promise<Card[]> {
+    return names
+      .map((n) => this.byName.get(n.toLowerCase()))
       .filter((c): c is Card => c !== undefined);
   }
 }
@@ -57,5 +69,41 @@ export class CachedCardSource implements CardSource {
   async getManyByArenaId(arenaIds: number[]): Promise<Card[]> {
     const results = await Promise.all(arenaIds.map((id) => this.getByArenaId(id)));
     return results.filter((c): c is Card => c !== undefined);
+  }
+
+  async getByName(name: string): Promise<Card | undefined> {
+    const cached = await this.cache.getByName(name);
+    if (cached) return cached;
+    let card = await this.primary.getByName(name);
+    if (!card && this.fallback) card = await this.fallback.getByName(name);
+    if (card) this.cache.add(card);
+    return card;
+  }
+
+  async getManyByName(names: string[]): Promise<Card[]> {
+    // Serve what we can from cache, batch-fetch the rest from the primary, and
+    // fall back to the offline source for anything still missing.
+    const missing: string[] = [];
+    const found: Card[] = [];
+    for (const name of names) {
+      const cached = await this.cache.getByName(name);
+      if (cached) found.push(cached);
+      else missing.push(name);
+    }
+
+    if (missing.length > 0) {
+      const fetched = await this.primary.getManyByName(missing);
+      for (const card of fetched) this.cache.add(card);
+      found.push(...fetched);
+
+      const resolvedNames = new Set(fetched.map((c) => c.name.toLowerCase()));
+      const stillMissing = missing.filter((n) => !resolvedNames.has(n.toLowerCase()));
+      if (stillMissing.length > 0 && this.fallback) {
+        const fromFallback = await this.fallback.getManyByName(stillMissing);
+        for (const card of fromFallback) this.cache.add(card);
+        found.push(...fromFallback);
+      }
+    }
+    return found;
   }
 }

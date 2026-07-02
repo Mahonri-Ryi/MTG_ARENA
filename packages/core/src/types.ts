@@ -75,4 +75,44 @@ export type LogEvent =
 export interface CardSource {
   getByArenaId(arenaId: number): Promise<Card | undefined>;
   getManyByArenaId(arenaIds: number[]): Promise<Card[]>;
+  getByName(name: string): Promise<Card | undefined>;
+  getManyByName(names: string[]): Promise<Card[]>;
+}
+
+/** One line of a decklist: a quantity of a named card. */
+export interface DeckEntry {
+  name: string;
+  quantity: number;
+  /** Optional Arena set code, e.g. "DMU". */
+  setCode?: string;
+  /** Optional collector number within the set. */
+  collectorNumber?: string;
+  /** Resolved card data (filled in once looked up). */
+  card?: Card;
+}
+
+/** A saved deck profile, parsed from an MTG Arena decklist export. */
+export interface Deck {
+  name: string;
+  main: DeckEntry[];
+  sideboard: DeckEntry[];
+  companion?: DeckEntry;
+  /** ISO timestamp of when this profile was created/imported. */
+  createdAt?: string;
+}
+
+/** Aggregate analysis of a deck, used for the profile view. */
+export interface DeckStats {
+  /** Total number of cards in the maindeck (sum of quantities). */
+  totalCards: number;
+  /** Count of colored cards by color symbol (W/U/B/R/G) in the maindeck. */
+  colorCounts: Record<string, number>;
+  /** Maindeck non-land cards bucketed by mana value (6 = 6+). */
+  manaCurve: Record<number, number>;
+  /** Count by primary card type (Creature/Instant/Land/...). */
+  typeCounts: Record<string, number>;
+  /** Average mana value of non-land maindeck cards. */
+  averageManaValue: number;
+  /** Number of maindeck cards we could not resolve to card data. */
+  unresolved: number;
 }
